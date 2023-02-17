@@ -1,3 +1,4 @@
+from __future__ import annotations
 import socket
 from hash import keyOfResource
 import pickle
@@ -8,7 +9,7 @@ class Node:
         self.ipAddr = ipAddr
         self.predecessor = None
         self.successor = None
-        self.key = self.ComputeKey(ipAddr)
+        self.id = self.ComputeKey(ipAddr)
         self.fingerTable = self.ComputeFingerTable()
         self.myResources = []
         self.m = 3
@@ -17,7 +18,6 @@ class Node:
 
     def ComputeKey(ipAddr):
         return 0
-        pass
 
     # Request for a resource
     def ReqResource(self, filename):
@@ -44,15 +44,15 @@ class Node:
 
 
     def Lookup(self, filename):
-        filekey = keyOfResource(filename)
-        if self.predecessor < filekey and filekey <= self.key:
+        fileId = keyOfResource(filename)
+        if self.predecessor < fileId and fileId <= self.id:
             return (self.ipAddr, self.port)
         
         for l in reversed(self.fingerTable):
-            if (filekey - self.key + self.totalNodes)%self.totalNodes >= (l.key - self.key + self.totalNodes)%self.totalNodes:
-                return RPC('Lookup', l.key, filekey)
+            if (fileId - self.id + self.totalNodes)%self.totalNodes >= (l.id - self.id + self.totalNodes)%self.totalNodes:
+                return RPC('Lookup', l.id, fileId)
 
-        return RPC('Lookup', self.fingerTable[0].key, filekey)
+        return RPC('Lookup', self.fingerTable[0].id, fileId)
 
         '''
         (successorIp, key) = self.FindSuccessor(filename)
@@ -69,5 +69,58 @@ class Node:
         pass
 
     # return the key
-    def FindSuccessor(filename):
-        pass
+    def FindSuccessor(self, id):
+        node : Node = self.FindPredecessor(id)
+        return node.successor
+
+    def FindPredecessor(self, id):
+        node : Node = self
+        #RPC to closest Preceeding Finger
+        while(not((id - node.id + node.totalNodes)%node.totalNodes <= (node.successor - node.id + node.totalNodes)%node.totalNodes)):
+            node = RPC('ClosestPreceedingFinger', node.id, id)
+        return node
+    '''
+        while(not(node.id < id and id < node.successor)):
+            node = node.ClosestPreceedingFinger(id)
+        return node
+    '''
+    
+
+    def ClosestPreceedingFinger(self, id):
+
+        for l in reversed(self.fingerTable):
+            if (id - self.id + self.totalNodes)%self.totalNodes > (l.id - self.id + self.totalNodes)%self.totalNodes:
+                return l
+        return self
+
+    def Join(self, node : Node):
+        if(node):
+            self.InitFingerTable(node)
+            self.UpdateOthers()
+        else:
+            for i in self.m:
+                self.fingerTable[i] = (self.id, self.ipAddr)
+            self.predecessor = self.id
+        # return success message
+
+    def InitFingerTable(self, node: Node):
+        tempNode = RPC('FindSuccessor', node, self.Start(0))
+        self.fingerTable[0] = (tempNode.id, tempNode.ipAddr)
+        self.predecessor = node.predecessor
+        RPC('SetPredecessor', node, self.id)
+        # return success msg
+
+    def UpdateOthers(self):
+        for i in self.m:
+            node = self.FindPredecessor((self.id - 2**i + self.totalNodes)%self.totalNodes)
+            RPC('UpdateFingerTable', node, i)
+        # return success msg
+
+    def UpdateFingerTable(self, node: Node, i):
+        if((node.id - self.id + self.totalNodes) % self.totalNodes <= (self.fingerTable[i].id - self.id + self.totalNodes) % self.totalNodes):
+            self.fingerTable[i] = (node.id, node.ipAddr)
+            RPC('UpdateFingerTable', self.predecessor, node, i)
+        # return success msg
+
+    def Start(self, k):
+        return (self.id + 2**(k))%(self.totalNodes)
