@@ -5,10 +5,11 @@ import pickle
 import os
 
 class Node:
-    def __init_(self, ipAddr):
+    def __init__(self, ipAddr):
         self.ipAddr = ipAddr
         self.predecessor = None
         self.successor = None
+        self.successorIpAddr = None
         self.id = self.ComputeKey(ipAddr)
         self.fingerTable = self.ComputeFingerTable()
         self.myResources = []
@@ -68,7 +69,7 @@ class Node:
     def ComputeFingerTable():
         pass
 
-    # return the key
+    # return the successor for the given key
     def FindSuccessor(self, id):
         node : Node = self.FindPredecessor(id)
         return node.successor
@@ -104,10 +105,15 @@ class Node:
         # return success message
 
     def InitFingerTable(self, node: Node):
-        tempNode = RPC('FindSuccessor', node, self.Start(0))
+        tempNode : Node = RPC('FindSuccessor', node, self.Start(0))
         self.fingerTable[0] = (tempNode.id, tempNode.ipAddr)
-        self.predecessor = node.predecessor
-        RPC('SetPredecessor', node, self.id)
+        self.predecessor = tempNode.predecessor
+        RPC('SetPredecessor', tempNode, self.id)
+        for i in range(self.m):
+            if((self.Start(i+1) - self.id + self.totalNodes)%self.totalNodes < (self.Start(i) - self.id + self.totalNodes)%self.totalNodes):
+                self.fingerTable[i+1] = self.fingerTable[i]
+            else:
+                self.fingerTable[i+1] = 
         # return success msg
 
     def UpdateOthers(self):
