@@ -9,10 +9,14 @@ RPCReqPort = 5002
 if __name__ == "__main__":
 
 
-    node = Node(sys.args[0])
+    node = Node(sys.argv[1])
     
-    beacon = sys.argv[1]
-    
+    beacon = None
+    try:
+        beacon = sys.argv[2]
+    except:
+        print('This is the first node')
+        
     node.Join(beacon)
 
     # Thread to handle incoming data requests
@@ -43,7 +47,5 @@ if __name__ == "__main__":
 
             for resource in node.myResources:
                 RPC('MoveResource', node.successor[1], RPCReqPort, resource[0])
-
-            pass
         else:
             print('Please read the above intructions carefully')

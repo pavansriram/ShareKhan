@@ -19,16 +19,16 @@ class Node:
     def __init__(self, ipAddr):
         self.ipAddr = ipAddr
         self.predecessor = None         # (key, ipAddr)
+        self.m = 3
         self.id = self.ComputeKey(ipAddr)
         self.successor = (self.id, ipAddr)         # (key, ipAddr)
         self.myResources = []
-        self.m = 3
         self.totalNodes = 3
         self.maxFileSize = 4096
-        self.fingerTable = None
+        self.fingerTable = [(self.id, self.ipAddr) for i in range(self.m)]
 
     def ComputeKey(self, ipAddr):
-        return (ipaddress.ip_address(ipAddr)%(2**self.m))
+        return (int(ipaddress.ip_address(ipAddr))%(2**self.m))
 
     def ComputeFileKey(filename):
         return filename.split('.')[0]
@@ -135,7 +135,7 @@ class Node:
 
     def ServerStub(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.bind(self.ipAddr, 12345)
+        sock.bind((self.ipAddr, RPCReqPort))
         sock.listen(10)
 
         while(True):
@@ -176,14 +176,14 @@ class Node:
             conn.close()
 
     def AddResource(self, filename):
-        filekey = self.computeFileKey(filename)
+        filekey = self.ComputeFileKey(filename)
         id, successorIp = self.FindSuccessor(filekey)
         os.rename(f'localData/{filename}', f'Data/{filename}')
         RPC('MoveResource', successorIp, DataReqPort, filename)
         
 
     def Lookup(self, filename):
-        fileId = keyOfResource(filename)
+        fileId = self.ComputeFileKey(filename)
         if self.predecessor[0] < fileId and fileId <= self.id:
             return (self.ipAddr, DataReqPort)
         
@@ -219,7 +219,7 @@ class Node:
             self.UpdateOthers()
             self.GetResources()
         else:
-            for i in self.m:
+            for i in range(self.m):
                 self.fingerTable[i] = (self.id, self.ipAddr)
             self.predecessor = (self.id, self.ipAddr)
             self.successor = (self.id, self.ipAddr)
