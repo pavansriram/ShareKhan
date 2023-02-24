@@ -24,15 +24,15 @@ class Dispatcher:
             start_new_thread(ResResource, (Client, ))
             ThreadCount += 1
             print('Thread Number: ' + str(ThreadCount))
-        ServerSideSocket.close()
+        # ServerSideSocket.close()
 
-        serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        serverSocket.bind((socket.gethostname(), 80))
-        serverSocket.listen(5)
+        # serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # serverSocket.bind((socket.gethostname(), 80))
+        # serverSocket.listen(5)
 
-        while True:
-            (clientSocket, address) = serverSocket.accept()
-            self.CreateThread(clientSocket, address)
+        # while True:
+        #     (clientSocket, address) = serverSocket.accept()
+        #     self.CreateThread(clientSocket, address)
 
     def CreateThread(clientSocket, address):
         pass
