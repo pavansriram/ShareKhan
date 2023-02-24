@@ -1,15 +1,16 @@
 from __future__ import annotations
+import random
 import socket
 from hash import keyOfResource
 import pickle
 import os
+import math
 
 class Node:
     def __init__(self, ipAddr):
         self.ipAddr = ipAddr
-        self.predecessor = None
-        self.successor = None
-        self.successorIpAddr = None
+        self.predecessor = None         # a node
+        self.successor = self           # the successor node itself
         self.id = self.ComputeKey(ipAddr)
         self.fingerTable = self.ComputeFingerTable()
         self.myResources = []
@@ -46,7 +47,7 @@ class Node:
 
     def Lookup(self, filename):
         fileId = keyOfResource(filename)
-        if self.predecessor < fileId and fileId <= self.id:
+        if self.predecessor.id < fileId and fileId <= self.id:
             return (self.ipAddr, self.port)
         
         for l in reversed(self.fingerTable):
@@ -95,38 +96,69 @@ class Node:
         return self
 
     def Join(self, node : Node):
+        self.successor = RPC('FindSuccessor', node, self.id)
         if(node):
             self.InitFingerTable(node)
             self.UpdateOthers()
         else:
             for i in self.m:
                 self.fingerTable[i] = (self.id, self.ipAddr)
-            self.predecessor = self.id
+            self.predecessor = self
+        
+        return {f'Node {self.id}, {self.ipAddr} joined successfully'}
         # return success message
 
     def InitFingerTable(self, node: Node):
         tempNode : Node = RPC('FindSuccessor', node, self.Start(0))
         self.fingerTable[0] = (tempNode.id, tempNode.ipAddr)
         self.predecessor = tempNode.predecessor
-        RPC('SetPredecessor', tempNode, self.id)
+        RPC('SetPredecessor', tempNode, self)
         for i in range(self.m):
             if((self.Start(i+1) - self.id + self.totalNodes)%self.totalNodes < (self.Start(i) - self.id + self.totalNodes)%self.totalNodes):
                 self.fingerTable[i+1] = self.fingerTable[i]
             else:
-                self.fingerTable[i+1] = 
+                ithEntry : Node = RPC('FindSuccessor', node, self.Start(i+1))
+                self.fingerTable[i+1] = (ithEntry.id, ithEntry.ipAddr)
+        
+        return {f'Updated the finger table for node {self.id}, {self.ipAddr}'}
         # return success msg
 
     def UpdateOthers(self):
         for i in self.m:
             node = self.FindPredecessor((self.id - 2**i + self.totalNodes)%self.totalNodes)
             RPC('UpdateFingerTable', node, i)
+        
+        return 'Update All Nodes Successfully'
         # return success msg
 
     def UpdateFingerTable(self, node: Node, i):
         if((node.id - self.id + self.totalNodes) % self.totalNodes <= (self.fingerTable[i].id - self.id + self.totalNodes) % self.totalNodes):
             self.fingerTable[i] = (node.id, node.ipAddr)
             RPC('UpdateFingerTable', self.predecessor, node, i)
+        
+        return {f'Updated {i}th FingerTable Successfully'}
         # return success msg
 
     def Start(self, k):
         return (self.id + 2**(k))%(self.totalNodes)
+    
+    def SetPredecessor(self, node: Node):
+        self.predecessor = node
+        return 
+
+    def Stabilize(self):
+        tempNode : Node = self.successor.predecessor
+        if((tempNode.id - self.id + self.totalNodes)%self.totalNodes < (self.successor.id - self.id + self.totalNodes)%self.totalNodes):
+            self.successor = tempNode
+        RPC('Notify', self.successor, self)
+
+    def Notify(self, node : Node):
+        if(self.predecessor == None or ((node.id - self.predecessor.id + self.totalNodes)%self.totalNodes <= (self.id - self.predecessor.id + self.totalNodes)%self.totalNodes)):
+            self.predecessor = node
+        return
+    
+    def FixFingers(self):
+        i = math.floor(random.random()*10)
+        self.fingerTable[i] = self.FindSuccessor(self.Start(i))
+        return 
+    
