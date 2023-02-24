@@ -11,10 +11,9 @@ import errno
 import threading
 import ipaddress
 
-from main import DataReqPort, RPCReqPort
-
 SEPARATOR = '$'
-
+DataReqPort = 5001
+RPCReqPort = 5002
 
 class Node:
     def __init__(self, ipAddr):
