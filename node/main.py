@@ -1,6 +1,7 @@
 from __future__ import annotations
 import socket
 from hash import keyOfResource
+from rpc import RPC
 import pickle
 import os
 
@@ -42,6 +43,39 @@ class Node:
         connection.close()
         pass
 
+    def ServerStub(self):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind(self.ipAddr, 12345)
+        sock.listen(10)
+
+        while(True):
+            (conn, addr) = sock.accept()    # accept incoming call
+            data = conn.recv(1024)          # fetch data from client
+            request = pickle.loads(data)    # unwrap the request
+
+            if request[0] == 'Lookup':
+                filename = request[1][0]    
+                result = self.Lookup(filename)
+            
+            elif request[0] == 'ClosestPreceedingFinger':
+                id = request[1][0]
+                result = self.ClosestPreceedingFinger(id)
+
+            elif request[0] == 'FindSuccessor':
+                id = request[1][0]
+                result = self.FindSuccessor(id)
+
+            elif request[0] == 'UpdateFingerTable':
+                node = request[1][0]
+                i = request[1][1]
+                result = self.UpdateFingerTable(node, i)
+
+            else:
+                result = -1
+            
+            retVal = pickle.dumps(result)
+            conn.send(retVal)
+            conn.close()
 
     def Lookup(self, filename):
         fileId = keyOfResource(filename)
