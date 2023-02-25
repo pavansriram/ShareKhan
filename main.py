@@ -11,8 +11,12 @@ if __name__ == "__main__":
 
     node = Node(sys.args[0])
     
-    beacon = sys.argv[1]
-    
+    beacon = None
+    try:
+        beacon = sys.argv[1]
+    except:
+        print('This is the first node')
+        
     node.Join(beacon)
 
     # Thread to handle incoming data requests

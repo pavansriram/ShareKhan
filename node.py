@@ -1,4 +1,4 @@
-from __future__ import annotations
+
 import random
 import socket
 from rpc import RPC
@@ -28,7 +28,7 @@ class Node:
         self.fingerTable = None
 
     def ComputeKey(self, ipAddr):
-        return (ipaddress.ip_address(ipAddr)%(2**self.m))
+        return (int(ipaddress.ip_address(ipAddr))%(2**self.m))
 
     def ComputeFileKey(filename):
         return filename.split('.')[0]
@@ -48,7 +48,8 @@ class Node:
                 bytes_read = clientSocket.recv(1024)
                 if not bytes_read:
                     break
-                with open(f'localData/{filename}', 'wr') as reqfile:
+                path = 'localData/' + filename
+                with open(path, 'wr') as reqfile:
                     reqfile.write(bytes_read)
         except socket.error as e:
             err = e.args[0]
@@ -86,7 +87,8 @@ class Node:
             callType, filename = pickle.loads(data)
 
             if(callType == 'ResourceRequest'):
-                with open(f'Data/{filename}', 'r') as sendFile:
+                path = 'Data/' + filename
+                with open(path, 'r') as sendFile:
                     while True:
                         # read the bytes from the file
                         bytes_read = sendFile.read(1024)
@@ -100,7 +102,8 @@ class Node:
                 print(f'File {filename} Sent Successfully')
                 
             elif(callType == 'MoveResource'):
-                with open(f'Data/{filename}', 'r') as sendFile:
+                path = 'Data/' + filename
+                with open(path, 'r') as sendFile:
                     while True:
                         # read the bytes from the file
                         bytes_read = sendFile.read(1024)
