@@ -107,7 +107,8 @@ class Node:
                 print(f'File {filename} Sent Successfully')
                 
             elif(callType == 'MoveResource'):
-                path = os.getcwd() + '/Data/' + filename
+                os.rename(os.getcwd() + '/Data/' + filename, os.getcwd() + '/Data/temp_' + filename)
+                path = os.getcwd() + '/Data/temp_' + filename
                 with open(path, 'r') as sendFile:
                     while True:
                         # read the bytes from the file
@@ -119,10 +120,10 @@ class Node:
                 print(f'File {filename} Move Successfull')
                 
                 # Removing the file
-                if os.path.exists(path):
-                    os.remove(path)
-                else:
-                    print("The file does not exist")
+                # if os.path.exists(path):
+                #     os.remove(path)
+                # else:
+                #     print("The file does not exist")
             else:
                 pass
             
@@ -282,6 +283,8 @@ class Node:
         if succpred[0] == filekey:
             id, successorIp = succpred[0], succpred[1]
         os.rename(os.getcwd() + '/localData/' + filename, os.getcwd() + '/Data/' + filename)
+        # with open(os.getcwd() + '/localData' + filename, 'r'):
+        #     with open(os.getcwd())
         self.RPC('MoveResource', successorIp, RPCReqPort, filename, self.ipAddr)
         
 
